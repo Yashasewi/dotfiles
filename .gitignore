@@ -1,0 +1,44 @@
+# Ignore sensitive and machine-specific files
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# History files
+.bash_history
+.zsh_history
+.python_history
+.node_repl_history
+.ts_node_repl_history
+.lesshst
+.viminfo
+.wget-hsts
+
+# Shell completion caches
+.zcompdump*
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*~
+
+# Tokens and credentials
+*.pem
+*.key
+*.crt
+.ssh/id_*
+.boto
+.emulator_console_auth_token
+# Local git config with sensitive information
+git
+
+# Application-specific config that may contain sensitive data
+.config/configstore/
+.config/firebase/
+.config/gcloud/
+.config/raycast/
+
