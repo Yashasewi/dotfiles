@@ -135,7 +135,7 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 export BAT_THEME="Catppuccin Mocha"
 
 # Replace cat with bat
-alias cat='bat'
+# alias cat='bat'
 
 # Enhanced eza aliases with icons
 export EZA_ICON_SPACING=2
