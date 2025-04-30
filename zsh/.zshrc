@@ -158,6 +158,23 @@ alias zshreload='source ~/.zshrc'
 # fzf with bat preview 
 alias fzf='fzf --preview "bat --color=always --style=numbers --line-range=:500 {}"'
 
+# Firebase CLI aliases
+alias fb='firebase'
+alias fbemu='firebase emulators:start'
+
+alias fblg='firebase login'
+alias fblgo='firebase logout'
+alias fbre='firebase login --reauth'
+alias fbin='firebase init'
+
+alias fbd='firebase deploy'
+alias fbd-fun='firebase deploy --only functions'
+alias fbd-host='firebase deploy --only hosting'
+alias fbd-firestore='firebase deploy --only firestore'
+alias fbd-storage='firebase deploy --only storage'
+alias fbd-database='firebase deploy --only database'
+
+alias fbl='firebase functions:log'
 
 export ANDROID_HOME=$HOME/Library/Android/sdk
 export PATH=$PATH:$ANDROID_HOME/emulator
