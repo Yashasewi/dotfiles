@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Account GitHub + 1Password SSH Setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface-2: #f4f4f5;
+    --border: #e4e4e7;
+    --border-strong: #d1d5db;
+    --text: #18181b;
+    --text-muted: #71717a;
+    --text-subtle: #a1a1aa;
+    --accent: #6d28d9;
+    --accent-light: #ede9fe;
+    --accent-mid: #8b5cf6;
+    --green: #059669;
+    --green-light: #d1fae5;
+    --orange: #d97706;
+    --orange-light: #fef3c7;
+    --red: #dc2626;
+    --code-fg: #1e1e2e;
+    --code-bg: #f8f7ff;
+    --token-comment: #71717a;
+    --token-key: #6d28d9;
+    --token-value: #059669;
+    --token-section: #0369a1;
+    --sidebar-w: 260px;
+    --font: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #09090b;
+      --surface: #18181b;
+      --surface-2: #27272a;
+      --border: #3f3f46;
+      --border-strong: #52525b;
+      --text: #fafafa;
+      --text-muted: #a1a1aa;
+      --text-subtle: #71717a;
+      --accent: #a78bfa;
+      --accent-light: rgba(139,92,246,0.12);
+      --accent-mid: #8b5cf6;
+      --green: #34d399;
+      --green-light: rgba(52,211,153,0.1);
+      --orange: #fbbf24;
+      --orange-light: rgba(251,191,36,0.1);
+      --red: #f87171;
+      --code-fg: #e4e4e7;
+      --code-bg: #18181b;
+      --token-comment: #71717a;
+      --token-key: #a78bfa;
+      --token-value: #34d399;
+      --token-section: #38bdf8;
+    }
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ─────────────────────────────── */
+  .layout {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar ─────────────────────────────── */
+  .sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    padding: 2rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .sidebar-logo {
+    padding: 0 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+
+  .sidebar-logo .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-mid);
+    background: var(--accent-light);
+    padding: 0.25rem 0.6rem;
+    border-radius: 100px;
+    margin-bottom: 0.6rem;
+  }
+
+  .sidebar-logo h2 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .nav-section-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-subtle);
+    padding: 0.75rem 1.25rem 0.4rem;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1.25rem;
+    font-size: 0.8375rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 0;
+    transition: color 0.15s, background 0.15s;
+    border-left: 2px solid transparent;
+    line-height: 1.5;
+  }
+
+  .nav-item:hover {
+    color: var(--text);
+    background: var(--surface-2);
+  }
+
+  .nav-item.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: var(--accent-light);
+    font-weight: 500;
+  }
+
+  .nav-num {
+    font-size: 0.7rem;
+    font-family: var(--mono);
+    color: var(--text-subtle);
+    width: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  /* ── Main ─────────────────────────────── */
+  .main {
+    flex: 1;
+    min-width: 0;
+    max-width: 800px;
+    padding: 3.5rem 3rem 6rem;
+  }
+
+  /* ── Header ─────────────────────────────── */
+  .doc-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .doc-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-mid);
+    background: var(--accent-light);
+    padding: 0.25rem 0.65rem;
+    border-radius: 100px;
+    margin-bottom: 1rem;
+  }
+
+  .doc-header h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    line-height: 1.25;
+    margin-bottom: 0.75rem;
+  }
+
+  .doc-header .lead {
+    font-size: 1rem;
+    color: var(--text-muted);
+    line-height: 1.65;
+    max-width: 560px;
+  }
+
+  .doc-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--text-subtle);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.6rem;
+    border-radius: 100px;
+    font-family: var(--mono);
+  }
+
+  /* ── Sections ─────────────────────────────── */
+  .doc-section {
+    margin-bottom: 3.5rem;
+    scroll-margin-top: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .h2-num {
+    font-size: 0.7rem;
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--text-subtle);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+  }
+
+  h3 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-top: 1.75rem;
+    margin-bottom: 0.6rem;
+  }
+
+  p {
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    font-size: 0.9375rem;
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  ul, ol {
+    color: var(--text-muted);
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.9375rem;
+  }
+
+  li { margin-bottom: 0.3rem; }
+  li code { font-size: 0.82rem; }
+
+  /* ── Code ─────────────────────────────── */
+  code {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    background: var(--surface-2);
+    color: var(--token-key);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .code-block {
+    position: relative;
+    margin-bottom: 1.25rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--code-bg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .code-filename {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .copy-btn {
+    font-family: var(--font);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-subtle);
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover {
+    color: var(--text);
+    border-color: var(--border-strong);
+    background: var(--surface);
+  }
+
+  .copy-btn.copied {
+    color: var(--green);
+    border-color: var(--green);
+  }
+
+  .code-block pre {
+    padding: 1.1rem 1.25rem;
+    overflow-x: auto;
+    margin: 0;
+  }
+
+  .code-block code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--code-fg);
+    font-size: 0.8125rem;
+    line-height: 1.65;
+  }
+
+  .code-block-plain {
+    position: relative;
+    margin-bottom: 1.25rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--code-bg);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .code-block-plain pre {
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    margin: 0;
+  }
+
+  .code-block-plain code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--code-fg);
+    font-size: 0.8125rem;
+    line-height: 1.65;
+  }
+
+  /* Token colors */
+  .c  { color: var(--token-comment); font-style: italic; }
+  .k  { color: var(--token-key); font-weight: 500; }
+  .v  { color: var(--token-value); }
+  .s  { color: var(--token-section); font-weight: 600; }
+
+  /* ── Callouts ─────────────────────────────── */
+  .callout {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.9rem 1.1rem;
+    border-radius: var(--radius);
+    margin-bottom: 1.25rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border: 1px solid;
+  }
+
+  .callout-icon {
+    font-size: 0.95rem;
+    flex-shrink: 0;
+    margin-top: 0.05rem;
+  }
+
+  .callout p { margin: 0; font-size: 0.875rem; }
+
+  .callout-note {
+    background: var(--accent-light);
+    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+    color: var(--text);
+  }
+  .callout-note p { color: var(--text-muted); }
+
+  .callout-warn {
+    background: var(--orange-light);
+    border-color: color-mix(in srgb, var(--orange) 30%, transparent);
+  }
+  .callout-warn p { color: var(--orange); }
+
+  /* ── Table ─────────────────────────────── */
+  .table-wrap {
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  th {
+    background: var(--surface-2);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.775rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 0.65rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 0.65rem 1rem;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface-2); }
+
+  td code { font-size: 0.75rem; }
+
+  /* ── Diagram ─────────────────────────────── */
+  .diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    box-shadow: var(--shadow);
+  }
+
+  .diagram pre {
+    font-family: var(--mono);
+    font-size: 0.775rem;
+    color: var(--text-muted);
+    line-height: 1.65;
+    display: inline-block;
+    margin: 0;
+  }
+
+  /* ── Steps ─────────────────────────────── */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    padding-left: 2.5rem;
+    counter-reset: step;
+  }
+
+  .steps::before {
+    content: '';
+    position: absolute;
+    left: 0.85rem;
+    top: 1.5rem;
+    bottom: 1.5rem;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .step {
+    position: relative;
+    padding: 0.5rem 0 0.5rem 1.25rem;
+    counter-increment: step;
+  }
+
+  .step::before {
+    content: counter(step);
+    position: absolute;
+    left: -2.5rem;
+    top: 0.45rem;
+    width: 1.7rem;
+    height: 1.7rem;
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    border-radius: 50%;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: var(--mono);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+
+  .step p {
+    margin: 0;
+    padding: 0.1rem 0;
+  }
+
+  /* ── Footer ─────────────────────────────── */
+  .doc-footer {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: gap;
+    gap: 0.75rem;
+  }
+
+  .doc-footer p {
+    font-size: 0.775rem;
+    color: var(--text-subtle);
+    margin: 0;
+  }
+
+  .footer-files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .footer-file {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-subtle);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+  }
+
+  /* ── Mobile ─────────────────────────────── */
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { padding: 2rem 1.25rem 4rem; }
+    .doc-header h1 { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-badge">Guide</div>
+      <h2>Multi-Account GitHub<br>+ 1Password SSH</h2>
+    </div>
+    <span class="nav-section-label">Contents</span>
+    <a href="#overview" class="nav-item"><span class="nav-num">01</span>Overview</a>
+    <a href="#architecture" class="nav-item"><span class="nav-num">02</span>Architecture</a>
+    <a href="#ssh-config" class="nav-item"><span class="nav-num">03</span>SSH Config</a>
+    <a href="#agent-toml" class="nav-item"><span class="nav-num">04</span>1Password Agent Config</a>
+    <a href="#gitconfig" class="nav-item"><span class="nav-num">05</span>Git Config (Global)</a>
+    <a href="#gitconfig-personal" class="nav-item"><span class="nav-num">06</span>Git Config (Personal)</a>
+    <a href="#pub-keys" class="nav-item"><span class="nav-num">07</span>Public Key Files</a>
+    <a href="#how-it-works" class="nav-item"><span class="nav-num">08</span>How It Works</a>
+    <a href="#commands" class="nav-item"><span class="nav-num">09</span>Common Commands</a>
+    <a href="#troubleshooting" class="nav-item"><span class="nav-num">10</span>Troubleshooting</a>
+    <a href="#key-reference" class="nav-item"><span class="nav-num">11</span>Key Reference</a>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <div class="doc-header">
+      <div class="doc-tag">SSH Setup Guide</div>
+      <h1>Multi-Account GitHub<br>+ 1Password SSH Setup</h1>
+      <p class="lead">macOS configuration for using two GitHub accounts (work + personal) with SSH authentication and commit signing, both managed by 1Password.</p>
+      <div class="doc-meta">
+        <span class="meta-chip">macOS</span>
+        <span class="meta-chip">1Password</span>
+        <span class="meta-chip">SSH ed25519</span>
+        <span class="meta-chip">GPG signing</span>
+      </div>
+    </div>
+
+    <!-- 1. Overview -->
+    <section class="doc-section" id="overview">
+      <h2><span class="h2-num">01</span> Overview</h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th></th><th>Work</th><th>Personal</th></tr>
+          <tr><td>GitHub User</td><td><code>your-work-username</code></td><td><code>your-personal-username</code></td></tr>
+          <tr><td>Email</td><td><code>you@company.com</code></td><td><code>12345678+username@users.noreply.github.com</code></td></tr>
+          <tr><td>SSH Host Alias</td><td><code>github.com</code></td><td><code>github.com-personal</code></td></tr>
+          <tr><td>Key Vault</td><td>Work</td><td>Personal</td></tr>
+          <tr><td>Repo Directory</td><td>Everywhere else</td><td><code>~/Desktop/Personal/</code></td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- 2. Architecture -->
+    <section class="doc-section" id="architecture">
+      <h2><span class="h2-num">02</span> Architecture</h2>
+      <div class="diagram">
+<pre>
+  ~/Desktop/Personal/repo/             Anywhere else
+         |                                   |
+         v                                   v
+  .gitconfig-personal                   .gitconfig
+  (personal identity)                (work identity)
+         |                                   |
+         v                                   v
+  url.insteadOf rewrites             git@github.com:org/repo
+  git@github.com: → git@github.com-personal:
+         |                                   |
+         v                                   v
+  ~/.ssh/config                      ~/.ssh/config
+  Host github.com-personal           Host github.com
+         |                                   |
+         v                                   v
+  personal_github.pub                work_github.pub
+  (IdentityFile filter)              (IdentityFile filter)
+         |                                   |
+         +─────>  1Password Agent  <─────────+
+                       |
+                 Touch ID prompt
+                       |
+                       v
+                 Signs with the
+                 correct private key
+                       |
+                       v
+                   GitHub SSH
+                       |
+              +────────+────────+
+              v                 v
+    Hi your-work-username!   Hi your-personal-username!
+</pre>
+      </div>
+    </section>
+
+    <!-- 3. SSH Config -->
+    <section class="doc-section" id="ssh-config">
+      <h2><span class="h2-num">03</span> SSH Config</h2>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">~/.ssh/config</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="c"># Work GitHub (default)</span>
+<span class="k">Host</span> <span class="v">github.com</span>
+	<span class="k">HostName</span> github.com
+	<span class="k">User</span> git
+	<span class="k">IdentityAgent</span> <span class="v">"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"</span>
+	<span class="k">IdentityFile</span> <span class="v">~/.ssh/work_github.pub</span>
+	<span class="k">IdentitiesOnly</span> <span class="v">yes</span>
+
+<span class="c"># Personal GitHub</span>
+<span class="k">Host</span> <span class="v">github.com-personal</span>
+	<span class="k">HostName</span> github.com
+	<span class="k">User</span> git
+	<span class="k">IdentityAgent</span> <span class="v">"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"</span>
+	<span class="k">IdentityFile</span> <span class="v">~/.ssh/personal_github.pub</span>
+	<span class="k">IdentitiesOnly</span> <span class="v">yes</span>
+
+<span class="c"># Everything else still uses 1Password agent</span>
+<span class="k">Host</span> <span class="v">*</span>
+	<span class="k">IdentityAgent</span> <span class="v">"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"</span></code></pre>
+      </div>
+
+      <div class="callout callout-note">
+        <span class="callout-icon">ℹ️</span>
+        <div><p><strong>IdentitiesOnly yes</strong> is critical. Without it, SSH offers ALL keys from the agent and GitHub accepts whichever matches first (non-deterministic). With it, SSH only offers the key specified in IdentityFile.</p></div>
+      </div>
+    </section>
+
+    <!-- 4. 1Password Agent Config -->
+    <section class="doc-section" id="agent-toml">
+      <h2><span class="h2-num">04</span> 1Password Agent Config</h2>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">~/.config/1Password/ssh/agent.toml</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="c"># Work vault keys</span>
+<span class="s">[[ssh-keys]]</span>
+<span class="k">item</span> = <span class="v">"GitHub"</span>
+<span class="k">vault</span> = <span class="v">"Work"</span>
+
+<span class="s">[[ssh-keys]]</span>
+<span class="k">item</span> = <span class="v">"GitHub Signing Key"</span>
+<span class="k">vault</span> = <span class="v">"Work"</span>
+
+<span class="c"># Personal vault keys</span>
+<span class="s">[[ssh-keys]]</span>
+<span class="k">item</span> = <span class="v">"GitHub"</span>
+<span class="k">vault</span> = <span class="v">"Personal"</span>
+
+<span class="s">[[ssh-keys]]</span>
+<span class="k">item</span> = <span class="v">"GitHub Signing Key"</span>
+<span class="k">vault</span> = <span class="v">"Personal"</span></code></pre>
+      </div>
+
+      <div class="callout callout-warn">
+        <span class="callout-icon">⚠️</span>
+        <p>This file MUST end with a trailing newline. Without it, 1Password silently reverts to default behavior (Private vault only).</p>
+      </div>
+
+      <p>Key points:</p>
+      <ul>
+        <li>Order controls which keys are offered first</li>
+        <li>Using <code>item</code> pins to specific keys (vs <code>vault</code> alone which exposes all keys in that vault)</li>
+        <li>Changes take effect immediately (no restart needed)</li>
+      </ul>
+    </section>
+
+    <!-- 5. Git Config Global -->
+    <section class="doc-section" id="gitconfig">
+      <h2><span class="h2-num">05</span> Git Config (Global)</h2>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">~/.gitconfig</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="s">[gpg]</span>
+	<span class="k">format</span> = <span class="v">ssh</span>
+<span class="s">[gpg "ssh"]</span>
+	<span class="k">program</span> = <span class="v">/Applications/1Password.app/Contents/MacOS/op-ssh-sign</span>
+<span class="s">[commit]</span>
+	<span class="k">gpgsign</span> = <span class="v">true</span>
+<span class="s">[user]</span>
+	<span class="k">signingkey</span> = <span class="v">ssh-ed25519 AAAA...your-work-signing-key...</span>
+	<span class="k">name</span> = <span class="v">Your-Work-Username</span>
+	<span class="k">email</span> = <span class="v">you@company.com</span>
+<span class="s">[includeIf "gitdir:~/Desktop/Personal/"]</span>
+	<span class="k">path</span> = <span class="v">~/.gitconfig-personal</span>
+<span class="s">[pull]</span>
+	<span class="k">rebase</span> = <span class="v">false</span>
+<span class="s">[init]</span>
+	<span class="k">defaultBranch</span> = <span class="v">main</span>
+<span class="s">[credential "https://github.com"]</span>
+	<span class="k">helper</span> = 
+	<span class="k">helper</span> = <span class="v">!/opt/homebrew/bin/gh auth git-credential</span>
+<span class="s">[credential "https://gist.github.com"]</span>
+	<span class="k">helper</span> = 
+	<span class="k">helper</span> = <span class="v">!/opt/homebrew/bin/gh auth git-credential</span></code></pre>
+      </div>
+
+      <div class="callout callout-note">
+        <span class="callout-icon">ℹ️</span>
+        <p>The <code>includeIf "gitdir:..."</code> directive loads the personal config ONLY when working inside <code>~/Desktop/Personal/</code>. The path is case-sensitive.</p>
+      </div>
+    </section>
+
+    <!-- 6. Git Config Personal -->
+    <section class="doc-section" id="gitconfig-personal">
+      <h2><span class="h2-num">06</span> Git Config (Personal)</h2>
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">~/.gitconfig-personal</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code><span class="s">[user]</span>
+	<span class="k">name</span> = <span class="v">Your-Personal-Username</span>
+	<span class="k">email</span> = <span class="v">12345678+username@users.noreply.github.com</span>
+	<span class="k">signingkey</span> = <span class="v">ssh-ed25519 AAAA...your-personal-signing-key...</span>
+<span class="s">[url "git@github.com-personal:"]</span>
+	<span class="k">insteadOf</span> = <span class="v">git@github.com:</span></code></pre>
+      </div>
+
+      <p>The <code>url.insteadOf</code> rule is the glue. When you clone <code>git@github.com:your-personal-username/repo.git</code> from inside <code>~/Desktop/Personal/</code>, git silently rewrites the remote to <code>git@github.com-personal:your-personal-username/repo.git</code>, which routes through the personal SSH host alias.</p>
+    </section>
+
+    <!-- 7. Public Key Files -->
+    <section class="doc-section" id="pub-keys">
+      <h2><span class="h2-num">07</span> Public Key Files</h2>
+      <p>These files tell SSH which specific key to request from the 1Password agent. Without them, the agent offers all keys non-deterministically.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">~/.ssh/work_github.pub</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code>ssh-ed25519 AAAA...your-work-auth-public-key... GitHub</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">~/.ssh/personal_github.pub</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code>ssh-ed25519 AAAA...your-personal-auth-public-key... GitHub</code></pre>
+      </div>
+
+      <div class="callout callout-warn">
+        <span class="callout-icon">⚠️</span>
+        <p>Permissions MUST be <code>chmod 644</code>. If set to 600, SSH treats them as private keys and throws "invalid format" or "UNPROTECTED PRIVATE KEY FILE" errors.</p>
+      </div>
+
+      <p>To regenerate these files from the agent:</p>
+      <div class="code-block-plain">
+        <pre><code>SSH_AUTH_SOCK=~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock ssh-add -L</code></pre>
+      </div>
+      <p>Copy the relevant line into the appropriate <code>.pub</code> file.</p>
+    </section>
+
+    <!-- 8. How It Works -->
+    <section class="doc-section" id="how-it-works">
+      <h2><span class="h2-num">08</span> How It Works (Step by Step)</h2>
+      <div class="steps">
+        <div class="step"><p>You <code>git push</code> from <code>~/Desktop/Personal/some-repo/</code></p></div>
+        <div class="step"><p>Git sees <code>gitdir</code> matches <code>~/Desktop/Personal/</code> and loads <code>.gitconfig-personal</code></p></div>
+        <div class="step"><p>The <code>url.insteadOf</code> rule rewrites <code>git@github.com:</code> to <code>git@github.com-personal:</code></p></div>
+        <div class="step"><p>SSH matches <code>Host github.com-personal</code> in <code>~/.ssh/config</code></p></div>
+        <div class="step"><p><code>IdentitiesOnly yes</code> + <code>IdentityFile ~/.ssh/personal_github.pub</code> tells SSH to ONLY request the personal key from 1Password</p></div>
+        <div class="step"><p>1Password prompts Touch ID, then signs with the matching private key from the Personal vault</p></div>
+        <div class="step"><p>GitHub authenticates the connection as <code>your-personal-username</code></p></div>
+        <div class="step"><p>For commit signing: <code>op-ssh-sign</code> uses the personal <code>signingkey</code> from <code>.gitconfig-personal</code> via 1Password</p></div>
+      </div>
+    </section>
+
+    <!-- 9. Common Commands -->
+    <section class="doc-section" id="commands">
+      <h2><span class="h2-num">09</span> Common Commands</h2>
+
+      <h3>Test SSH Authentication</h3>
+      <div class="code-block-plain">
+        <pre><code><span class="c"># Should say: Hi your-work-username!</span>
+ssh -T git@github.com
+
+<span class="c"># Should say: Hi your-personal-username!</span>
+ssh -T git@github.com-personal</code></pre>
+      </div>
+
+      <h3>List Agent Keys</h3>
+      <div class="code-block-plain">
+        <pre><code>SSH_AUTH_SOCK=~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock ssh-add -l</code></pre>
+      </div>
+
+      <h3>Verify Identity in a Repo</h3>
+      <div class="code-block-plain">
+        <pre><code><span class="c"># Check which identity a repo will use</span>
+git -C ~/Desktop/Personal/some-repo config user.email
+git -C ~/Desktop/Personal/some-repo config user.name
+git -C ~/Desktop/Personal/some-repo config user.signingkey</code></pre>
+      </div>
+
+      <h3>Clone a Personal Repo</h3>
+      <div class="code-block-plain">
+        <pre><code><span class="c"># From inside ~/Desktop/Personal/ — url.insteadOf handles rewriting</span>
+cd ~/Desktop/Personal
+git clone git@github.com:your-personal-username/repo-name.git</code></pre>
+      </div>
+
+      <h3>GitHub CLI (Multiple Accounts)</h3>
+      <div class="code-block-plain">
+        <pre><code><span class="c"># Add personal account</span>
+gh auth login
+
+<span class="c"># Switch between accounts</span>
+gh auth switch
+
+<span class="c"># Check current status</span>
+gh auth status</code></pre>
+      </div>
+
+      <h3>Debug SSH Connection</h3>
+      <div class="code-block-plain">
+        <pre><code><span class="c"># Verbose output shows which key is being offered</span>
+ssh -vT git@github.com-personal 2&gt;&amp;1 | grep "Will attempt\|Offering\|Authenticated"</code></pre>
+      </div>
+    </section>
+
+    <!-- 10. Troubleshooting -->
+    <section class="doc-section" id="troubleshooting">
+      <h2><span class="h2-num">10</span> Troubleshooting</h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Problem</th><th>Cause</th><th>Fix</th></tr>
+          <tr>
+            <td><code>Permission denied (publickey)</code></td>
+            <td>1Password agent not serving the key</td>
+            <td>Check <code>agent.toml</code> has the correct vault/item. Run <code>ssh-add -l</code> to verify key is listed.</td>
+          </tr>
+          <tr>
+            <td>Wrong account authenticates</td>
+            <td><code>IdentitiesOnly yes</code> missing, or wrong key in <code>.pub</code> file</td>
+            <td>Verify <code>.pub</code> file matches the correct key from <code>ssh-add -L</code> output. Ensure <code>IdentitiesOnly yes</code> is set.</td>
+          </tr>
+          <tr>
+            <td><code>invalid format</code> or <code>UNPROTECTED PRIVATE KEY FILE</code></td>
+            <td><code>.pub</code> file has wrong permissions</td>
+            <td><code>chmod 644 ~/.ssh/*.pub</code></td>
+          </tr>
+          <tr>
+            <td>Commits not showing as "Verified" on GitHub</td>
+            <td>Signing key not added to GitHub</td>
+            <td>GitHub Settings → SSH and GPG keys → New SSH key → Type: "Signing Key" → paste the public signing key</td>
+          </tr>
+          <tr>
+            <td>Personal config not loading</td>
+            <td>Case mismatch in <code>gitdir</code> path</td>
+            <td>The path is case-sensitive. Must match exactly: <code>~/Desktop/Personal/</code> (capital P). Trailing slash required.</td>
+          </tr>
+          <tr>
+            <td>No Touch ID prompt from 1Password</td>
+            <td>1Password app not running or locked</td>
+            <td>Open 1Password and unlock it. The SSH agent requires the app to be running.</td>
+          </tr>
+          <tr>
+            <td><code>agent.toml</code> changes not taking effect</td>
+            <td>Missing trailing newline</td>
+            <td>Ensure file ends with a blank line. 1Password silently ignores malformed config.</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- 11. Key Reference -->
+    <section class="doc-section" id="key-reference">
+      <h2><span class="h2-num">11</span> Key Reference</h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Purpose</th><th>Public Key</th><th>Vault</th><th>Item</th></tr>
+          <tr>
+            <td>Work SSH Auth</td>
+            <td><code>ssh-ed25519 AAAA...work-auth-key</code></td>
+            <td>Work</td>
+            <td>GitHub</td>
+          </tr>
+          <tr>
+            <td>Work Commit Signing</td>
+            <td><code>ssh-ed25519 AAAA...work-signing-key</code></td>
+            <td>Work</td>
+            <td>GitHub Signing Key</td>
+          </tr>
+          <tr>
+            <td>Personal SSH Auth</td>
+            <td><code>ssh-ed25519 AAAA...personal-auth-key</code></td>
+            <td>Personal</td>
+            <td>GitHub</td>
+          </tr>
+          <tr>
+            <td>Personal Commit Signing</td>
+            <td><code>ssh-ed25519 AAAA...personal-signing-key</code></td>
+            <td>Personal</td>
+            <td>GitHub Signing Key</td>
+          </tr>
+        </table>
+      </div>
+
+      <h3>How to Get Your Keys</h3>
+      <div class="code-block-plain">
+        <pre><code><span class="c"># List all keys the agent currently serves (run this to find your actual keys)</span>
+SSH_AUTH_SOCK=~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock ssh-add -L
+
+<span class="c"># Or get a specific key from 1Password CLI</span>
+op item get "GitHub" --vault "Work" --fields "public key"
+op item get "GitHub" --vault "Personal" --fields "public key"</code></pre>
+      </div>
+    </section>
+
+    <div class="doc-footer">
+      <p>Last updated: May 2026</p>
+      <div class="footer-files">
+        <span class="footer-file">~/.ssh/config</span>
+        <span class="footer-file">~/.config/1Password/ssh/agent.toml</span>
+        <span class="footer-file">~/.gitconfig</span>
+        <span class="footer-file">~/.gitconfig-personal</span>
+        <span class="footer-file">~/.ssh/*.pub</span>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // Active nav highlighting on scroll
+  const sections = document.querySelectorAll('.doc-section');
+  const navItems = document.querySelectorAll('.nav-item');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navItems.forEach(n => n.classList.remove('active'));
+        const active = document.querySelector(`.nav-item[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Copy button
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    const text = pre.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+</script>
+</body>
+</html>
